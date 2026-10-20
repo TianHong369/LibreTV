@@ -22,7 +22,10 @@ export function getPassword(): string {
 }
 
 export function isPasswordConfigured(): boolean {
-  return getPassword().length > 0;
+  // Allow password to be optional by checking the environment variable
+  // If PASSWORD is explicitly set to empty string, treat it as not configured
+  const password = getPassword();
+  return password.length > 0;
 }
 
 function getSecret(): string {
@@ -60,7 +63,8 @@ export function verifySession(token: string | undefined | null): boolean {
 /** 恒定时间比较密码（比较 sha256 摘要避免长度泄漏） */
 export function checkPassword(input: string): boolean {
   const password = getPassword();
-  if (!password) return false;
+  // If no password is configured, allow access without authentication
+  if (!password) return true;
   const a = crypto.createHash('sha256').update(input).digest();
   const b = crypto.createHash('sha256').update(password).digest();
   return crypto.timingSafeEqual(a, b);
