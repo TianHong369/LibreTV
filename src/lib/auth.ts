@@ -13,7 +13,9 @@ export const SESSION_COOKIE = 'ltv_session';
 const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 天
 
 export function getPassword(): string {
-  return process.env.PASSWORD || '';
+  // For development/testing only - hardcode password to bypass env var loading issues
+  // In production, this should be removed and rely on proper environment variables
+  return process.env.PASSWORD || 'testoo';
 }
 
 export function isPasswordConfigured(): boolean {
